@@ -1,0 +1,79 @@
+#!/bin/sh
+#############################################
+## Start / Stop script for OpenBSC ##
+#############################################
+
+SCRIPT_NAME="startBTS"
+HLR="/dev/shm/hlr.sqlite3"
+OPENBSC="/home/OpenBSC/open-bsc.cfg"
+OSMOBTS="/home/OpenBSC/osmo-bts.cfg"
+
+#############################################
+## Fin des variables ##
+#############################################
+usage() {
+echo "---------------------------------------------------------------------"
+echo "Usage: ${SCRIPT_NAME} (stop|start)"
+echo "---------------------------------------------------------------------"
+exit 2
+}
+
+if [ -z $1 ]; then
+usage
+fi
+
+bts_start() {
+echo "---------------------------------------------------------------------"
+echo "Starting BTS..."
+echo "---------------------------------------------------------------------"
+echo "Starting OSMONITB..."
+su root -c "screen -AmdS OSMONITB taskset 0x1 osmo-nitb -c ${OPENBSC} -l ${HLR} -P -m -C --debug=DRLL:DCC:DMM:DRR:DRSL:DNM"
+sleep 1
+echo "Starting OSMOTRX..."
+su root -c "screen -AmdS OSMOTRX taskset 0x2 osmobts-trx -c ${OSMOBTS}"
+sleep 1
+echo "Starting Linux Call Router..."
+su root -c "screen -AmdS LCR taskset 0x3 lcr start"
+sleep 1
+echo "Starting Transceiver..."
+su root -c "screen -AmdS TRANS transceiver"
+sleep 1
+echo "Connecting to OpenBSC..."
+#su root -c "screen -AmdS OPENBSC taskset 0x2 telnet 127.0.0.1 4242"
+echo "---------------------------------------------------------------------"
+echo "BTS STARTED"
+echo "---------------------------------------------------------------------"
+}
+
+bts_stop() {
+echo "---------------------------------------------------------------------"
+echo "Stopping BTS..."
+echo "---------------------------------------------------------------------"
+echo "Stopping OSMONITB..."
+echo "Stopping OSMOTRX..."
+su root -c "pkill osmo"
+sleep 1
+echo "Stopping Linux Call Router..."
+su root -c "pkill lcr"
+sleep 1
+echo "Stopping Transceiver..."
+su root -c "pkill transceiver"
+sleep 1
+echo "Stopping OpenBSC..."
+echo "---------------------------------------------------------------------"
+echo "BTS STOPPED."
+echo "---------------------------------------------------------------------"
+}
+
+case $1 in
+stop)
+bts_stop
+;;
+start)
+bts_start
+;;
+*)
+usage
+esac
+
+exit 0
