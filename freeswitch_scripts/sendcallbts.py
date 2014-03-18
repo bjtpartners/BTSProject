@@ -3,6 +3,7 @@ import os
 from freeswitch import *
 import sqlite3
 
+# work well with OPENBSC
 
 def toBTS( extension ):
 
